@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v6
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd0f4d08432af # v4
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: '24'
           cache: npm
