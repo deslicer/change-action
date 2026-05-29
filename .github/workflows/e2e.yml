@@ -1,0 +1,52 @@
+name: E2E
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  install-smoke:
+    name: Install smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v6
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd0f4d08432af # v4
+        with:
+          node-version: '24'
+
+      - name: Install cosign (Linux)
+        if: runner.os == 'Linux'
+        uses: sigstore/cosign-installer@d42d3f4a29e3e5d008d0921ce94b5f73657a8edf # v3.9.2
+
+      - name: Install cosign (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cosign
+
+      - name: Build action bundle
+        shell: bash
+        run: npm ci && npm run build
+
+      - name: Install deslicer via action
+        uses: ./
+        with:
+          version: v1.0.0
+
+      - name: Assert deslicer version
+        shell: bash
+        run: deslicer --version

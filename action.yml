@@ -14,8 +14,9 @@ inputs:
     description: Optional 40-char SHA. If set, overrides version and pins to an immutable commit.
     required: false
   command:
-    description: deslicer change subcommand (e.g. plan, approve, status, show, reject).
-    required: true
+    description: deslicer change subcommand (e.g. plan, approve, status). Omit to install only.
+    required: false
+    default: ''
   command-args:
     description: Additional arguments passed to deslicer change.
     required: false
