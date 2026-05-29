@@ -1,0 +1,23 @@
+{
+  "name": "change-action",
+  "version": "0.0.0",
+  "private": true,
+  "description": "GitHub Action — install deslicer CLI and run deslicer change commands",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "lint": "eslint src --max-warnings 0",
+    "test": "jest",
+    "dist-check": "node -e \"require('fs').accessSync('dist/index.js')\""
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/tool-cache": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@vercel/ncc": "^0.38.3",
+    "typescript": "^5.7.2"
+  }
+}
