@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 — 2026-05-29
+
+- Download Fulcio `.cert` sidecar from `deslicer/cli` releases and pass `--certificate` to `cosign verify-blob`
+
 ## 1.0.1 — 2026-05-29
 
 - Fix `ensureCosign()` returning the tool-cache directory instead of the cosign binary path

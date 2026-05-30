@@ -2,7 +2,12 @@ import * as exec from '@actions/exec';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { CLI_REPO_NAME, CLI_REPO_OWNER, RELEASE_WORKFLOW_PATH } from './constants';
+import {
+  CLI_REPO_NAME,
+  CLI_REPO_OWNER,
+  COSIGN_OIDC_ISSUER,
+  RELEASE_WORKFLOW_PATH,
+} from './constants';
 import { ensureCosign } from './cosign';
 import { artifactName, binaryFileName, rustTarget } from './platform';
 import type { InstalledBinary, ResolvedRelease } from './types';
@@ -41,6 +46,7 @@ export async function verifySha256File(archivePath: string, shaPath: string): Pr
 export async function verifyCosignSignature(
   archivePath: string,
   sigPath: string,
+  certPath: string,
   tag: string,
 ): Promise<void> {
   const cosign = await ensureCosign();
@@ -50,8 +56,9 @@ export async function verifyCosignSignature(
     [
       'verify-blob',
       `--certificate-identity=${identity}`,
-      '--certificate-oidc-issuer=https://token.actions.githubusercontent.com',
+      `--certificate-oidc-issuer=${COSIGN_OIDC_ISSUER}`,
       `--signature=${sigPath}`,
+      `--certificate=${certPath}`,
       archivePath,
     ],
     { ignoreReturnCode: true },
@@ -92,13 +99,15 @@ export async function downloadAndVerify(
   const archivePath = path.join(workDir, artifact);
   const shaPath = `${archivePath}.sha256`;
   const sigPath = `${archivePath}.sig`;
+  const certPath = `${archivePath}.cert`;
 
   await downloadUrl(`${base}/${artifact}`, archivePath);
   await downloadUrl(`${base}/${artifact}.sha256`, shaPath);
   await downloadUrl(`${base}/${artifact}.sig`, sigPath);
+  await downloadUrl(`${base}/${artifact}.cert`, certPath);
 
   await verifySha256File(archivePath, shaPath);
-  await verifyCosignSignature(archivePath, sigPath, release.tag);
+  await verifyCosignSignature(archivePath, sigPath, certPath, release.tag);
 
   const extractDir = path.join(workDir, 'extract');
   await extractArchive(archivePath, extractDir, platform);
