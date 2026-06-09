@@ -28337,13 +28337,20 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.cacheBinary = cacheBinary;
 exports.tempExtractDir = tempExtractDir;
 const tc = __importStar(__nccwpck_require__(3472));
+const fs = __importStar(__nccwpck_require__(1455));
 const os = __importStar(__nccwpck_require__(8161));
 const path = __importStar(__nccwpck_require__(6760));
 const CACHE_PREFIX = 'deslicer-cli';
 async function cacheBinary(binaryPath, semver) {
     const fileName = path.basename(binaryPath);
-    const cachedPath = await tc.cacheFile(binaryPath, fileName, `${CACHE_PREFIX}-${semver}`, semver);
-    return { dir: path.dirname(cachedPath), full: cachedPath };
+    // tc.cacheFile returns the destination DIRECTORY (.../<tool>/<version>/<arch>),
+    // not the cached file path. Join the file name to get the executable.
+    const cachedDir = await tc.cacheFile(binaryPath, fileName, `${CACHE_PREFIX}-${semver}`, semver);
+    const full = path.join(cachedDir, fileName);
+    if (process.platform !== 'win32') {
+        await fs.chmod(full, 0o755);
+    }
+    return { dir: cachedDir, full };
 }
 function tempExtractDir() {
     return path.join(os.tmpdir(), `deslicer-action-${process.pid}`);

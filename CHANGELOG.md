@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4 — 2026-06-09
+
+- Fix CLI execution after install: `tc.cacheFile` returns the cache directory, not the file path. The action was adding the wrong dir to `PATH` and trying to exec the arch directory, failing with `Unable to locate executable file: .../x64`. Now joins the file name and re-applies the executable bit.
+
 ## 1.0.3 — 2026-06-09
 
 - Commit the compiled `dist/` bundle so the action loads at a pinned ref (JS actions run `dist/index.js` from the git tree; release assets are not used). Fixes `File not found: dist/index.js`.
