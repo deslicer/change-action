@@ -39,7 +39,8 @@ jobs:
 
       - name: Verify committed dist matches build
         run: |
-          git diff --exit-code dist/ || (
+          git add -A dist
+          git diff --cached --exit-code dist/ || (
             echo "::error::dist/ is out of date — run npm run build and commit dist/"
             exit 1
           )

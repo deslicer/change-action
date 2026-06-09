@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3 — 2026-06-09
+
+- Commit the compiled `dist/` bundle so the action loads at a pinned ref (JS actions run `dist/index.js` from the git tree; release assets are not used). Fixes `File not found: dist/index.js`.
+- Stop ignoring `dist/` in `.gitignore`.
+- CI dist-drift guard now stages `dist/` before diffing so it actually catches an uncommitted or stale bundle.
+
 ## 1.0.2 — 2026-05-29
 
 - Download Fulcio `.cert` sidecar from `deslicer/cli` releases and pass `--certificate` to `cosign verify-blob`
