@@ -30,6 +30,12 @@ inputs:
       CLI as $DESLICER_API_TOKEN and masked in logs — never passed as an
       argument. Use a repository or environment secret.
     required: false
+  github-token:
+    description: >-
+      Optional GitHub token for resolving deslicer/cli releases via the API.
+      Pass ${{ github.token }} in workflows to avoid unauthenticated rate
+      limits. Not forwarded to the CLI.
+    required: false
 
 outputs:
   cli-version:

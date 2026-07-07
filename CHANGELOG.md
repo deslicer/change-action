@@ -3,6 +3,7 @@
 ## 1.1.0 — 2026-07-07
 
 - Add optional `api-token` input for direct (App-free) mode. The value is masked with `core.setSecret` and exported to the CLI as `$DESLICER_API_TOKEN` — env-only, never argv.
+- Add optional `github-token` input for authenticated `deslicer/cli` release resolution. Pass `${{ github.token }}` in workflows to avoid unauthenticated GitHub API rate limits on shared runners.
 
 ## 1.0.4 — 2026-06-09
 

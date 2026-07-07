@@ -49,6 +49,7 @@ describe('api-token input', () => {
     for (const key of Object.keys(inputs)) {
       delete inputs[key];
     }
+    delete process.env.GITHUB_TOKEN;
   });
 
   it('masks the token and exports DESLICER_API_TOKEN when api-token is set', async () => {
@@ -80,5 +81,14 @@ describe('api-token input', () => {
 
     expect(exportVariable).toHaveBeenCalledWith('OBSERVER_API_URL', 'https://api.deslicer.ai');
     expect(exportVariable).not.toHaveBeenCalledWith('DESLICER_API_TOKEN', expect.anything());
+  });
+
+  it('masks github-token and sets GITHUB_TOKEN for release resolution', async () => {
+    inputs['github-token'] = 'ghs_installation_token';
+
+    await runAction();
+
+    expect(setSecret).toHaveBeenCalledWith('ghs_installation_token');
+    expect(process.env.GITHUB_TOKEN).toBe('ghs_installation_token');
   });
 });

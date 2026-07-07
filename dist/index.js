@@ -28257,6 +28257,15 @@ async function runDeslicerChange(binaryPath, command, args) {
         core.setFailed(`deslicer change ${command} exited with code ${code}`);
     }
 }
+function configureGithubApiToken() {
+    const githubToken = core.getInput('github-token');
+    if (!githubToken) {
+        return;
+    }
+    // REQ-LOG-007: mask before any env export; used only for release resolution.
+    core.setSecret(githubToken);
+    process.env.GITHUB_TOKEN = githubToken;
+}
 async function main() {
     const version = core.getInput('version') || 'v1';
     const versionSha = core.getInput('version-sha');
@@ -28264,6 +28273,7 @@ async function main() {
     const commandArgs = parseCommandArgs(core.getInput('command-args'));
     const observerApiUrl = core.getInput('observer-api-url');
     const apiToken = core.getInput('api-token');
+    configureGithubApiToken();
     const release = await (0, resolve_1.resolveRelease)(versionSha || version);
     core.info(`Resolved deslicer ${release.semver} (${release.sha.slice(0, 7)}) from tag ${release.tag}`);
     const installed = await (0, download_1.downloadAndVerify)(release, process.platform, process.arch);
