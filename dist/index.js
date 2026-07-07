@@ -28629,16 +28629,19 @@ exports.fetchReleaseByTag = fetchReleaseByTag;
 exports.listReleases = listReleases;
 exports.resolveTagCommitSha = resolveTagCommitSha;
 const constants_1 = __nccwpck_require__(8386);
-async function githubFetch(path) {
-    const token = process.env.GITHUB_TOKEN;
+function githubAuthHeaders() {
     const headers = {
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
     };
+    const token = process.env.GITHUB_TOKEN;
     if (token) {
         headers.Authorization = `Bearer ${token}`;
     }
-    const response = await fetch(`${constants_1.GITHUB_API}${path}`, { headers });
+    return headers;
+}
+async function githubFetch(path) {
+    const response = await fetch(`${constants_1.GITHUB_API}${path}`, { headers: githubAuthHeaders() });
     if (!response.ok) {
         const body = await response.text();
         throw new Error(`GitHub API ${path} failed: HTTP ${response.status} ${response.statusText} — ${body.slice(0, 200)}`);
@@ -28663,10 +28666,7 @@ async function resolveTagCommitSha(tag) {
         throw new Error(`Unable to peel annotated tag ${tag}: missing object URL`);
     }
     const tagObj = await fetch(ref.object.url, {
-        headers: {
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-        },
+        headers: githubAuthHeaders(),
     });
     if (!tagObj.ok) {
         throw new Error(`Failed to peel tag ${tag}: HTTP ${tagObj.status}`);
