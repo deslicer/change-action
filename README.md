@@ -59,7 +59,7 @@ Enterprise teams should pin `version-sha` or an immutable semver tag.
 | `command-args` | No | `''` | Extra arguments for `deslicer change` |
 | `observer-api-url` | No | — | Sets `$OBSERVER_API_URL` for the CLI |
 | `api-token` | No | — | Observer API token; exported as `$DESLICER_API_TOKEN` (masked, env-only) |
-| `github-token` | No | — | GitHub token for `deslicer/cli` release API calls; pass `${{ github.token }}` to avoid rate limits |
+| `github-token` | No | — | GitHub token for `deslicer/cli` release API calls; pass the workflow `github.token` to avoid rate limits |
 
 ## Outputs
 

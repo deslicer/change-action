@@ -33,7 +33,7 @@ inputs:
   github-token:
     description: >-
       Optional GitHub token for resolving deslicer/cli releases via the API.
-      Pass ${{ github.token }} in workflows to avoid unauthenticated rate
+      Pass the workflow github.token value to avoid unauthenticated rate
       limits. Not forwarded to the CLI.
     required: false
 
