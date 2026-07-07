@@ -56,7 +56,76 @@ jobs:
         uses: ./
         with:
           version: v1.0.0
+          github-token: ${{ github.token }}
 
       - name: Assert deslicer version
         shell: bash
         run: deslicer --version
+
+  # Live round-trip against the staging Observer using the api-token
+  # direct (App-free) mode: bundle a fixture app, upload it, create a
+  # plan, and trigger compile. Requires per-repo staging credentials, so
+  # it never runs on fork PRs — dispatch/schedule only.
+  live-e2e:
+    name: Live E2E (staging, direct mode)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v6
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '24'
+
+      # Step-scoped env is not visible to the same step's `if:` — probe
+      # the secrets in a gate step and branch on its output.
+      - name: Check staging credentials
+        id: creds-gate
+        env:
+          STAGING_API_TOKEN: ${{ secrets.DESLICER_STAGING_API_TOKEN }}
+          STAGING_OBSERVER_URL: ${{ vars.STAGING_OBSERVER_API_URL }}
+          STAGING_TARGET_GROUP: ${{ vars.STAGING_TARGET_GROUP_ID }}
+        run: |
+          if [ -n "$STAGING_API_TOKEN" ] && [ -n "$STAGING_OBSERVER_URL" ] && [ -n "$STAGING_TARGET_GROUP" ]; then
+            echo "has_creds=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_creds=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping live E2E — DESLICER_STAGING_API_TOKEN secret and/or STAGING_OBSERVER_API_URL / STAGING_TARGET_GROUP_ID variables are not configured."
+          fi
+
+      - name: Install cosign
+        if: steps.creds-gate.outputs.has_creds == 'true'
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+
+      - name: Build action bundle
+        if: steps.creds-gate.outputs.has_creds == 'true'
+        run: npm ci && npm run build
+
+      - name: Write fixture app
+        if: steps.creds-gate.outputs.has_creds == 'true'
+        run: |
+          mkdir -p e2e-fixture/apps/change_action_e2e_probe/default
+          cat > e2e-fixture/apps/change_action_e2e_probe/default/app.conf <<'EOF'
+          [install]
+          is_configured = true
+
+          [ui]
+          is_visible = false
+          label = change-action live E2E probe
+
+          [launcher]
+          author = deslicer
+          description = Fixture app created by change-action nightly live E2E
+          version = 1.0.0
+          EOF
+
+      - name: Plan from bundle via action (direct mode)
+        if: steps.creds-gate.outputs.has_creds == 'true'
+        uses: ./
+        with:
+          version: v1
+          command: plan
+          command-args: --source-dir ./e2e-fixture --target-group ${{ vars.STAGING_TARGET_GROUP_ID }} --name change-action-live-e2e --no-wait
+          observer-api-url: ${{ vars.STAGING_OBSERVER_API_URL }}
+          api-token: ${{ secrets.DESLICER_STAGING_API_TOKEN }}
+          github-token: ${{ github.token }}

@@ -24,6 +24,18 @@ inputs:
   observer-api-url:
     description: Optional. Sets $OBSERVER_API_URL for the CLI.
     required: false
+  api-token:
+    description: >-
+      Optional Observer API token for direct (App-free) mode. Exported to the
+      CLI as $DESLICER_API_TOKEN and masked in logs — never passed as an
+      argument. Use a repository or environment secret.
+    required: false
+  github-token:
+    description: >-
+      Optional GitHub token for resolving deslicer/cli releases via the API.
+      Pass the workflow github.token value to avoid unauthenticated rate
+      limits. Not forwarded to the CLI.
+    required: false
 
 outputs:
   cli-version:

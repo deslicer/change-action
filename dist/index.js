@@ -28257,12 +28257,23 @@ async function runDeslicerChange(binaryPath, command, args) {
         core.setFailed(`deslicer change ${command} exited with code ${code}`);
     }
 }
+function configureGithubApiToken() {
+    const githubToken = core.getInput('github-token');
+    if (!githubToken) {
+        return;
+    }
+    // REQ-LOG-007: mask before any env export; used only for release resolution.
+    core.setSecret(githubToken);
+    process.env.GITHUB_TOKEN = githubToken;
+}
 async function main() {
     const version = core.getInput('version') || 'v1';
     const versionSha = core.getInput('version-sha');
     const command = core.getInput('command');
     const commandArgs = parseCommandArgs(core.getInput('command-args'));
     const observerApiUrl = core.getInput('observer-api-url');
+    const apiToken = core.getInput('api-token');
+    configureGithubApiToken();
     const release = await (0, resolve_1.resolveRelease)(versionSha || version);
     core.info(`Resolved deslicer ${release.semver} (${release.sha.slice(0, 7)}) from tag ${release.tag}`);
     const installed = await (0, download_1.downloadAndVerify)(release, process.platform, process.arch);
@@ -28270,6 +28281,11 @@ async function main() {
     core.addPath(cached.dir);
     if (observerApiUrl) {
         core.exportVariable('OBSERVER_API_URL', observerApiUrl);
+    }
+    if (apiToken) {
+        // Secret-safe: mask before export, env-only delivery (never argv). REQ-LOG-007.
+        core.setSecret(apiToken);
+        core.exportVariable('DESLICER_API_TOKEN', apiToken);
     }
     core.setOutput('cli-version', release.semver);
     core.setOutput('cli-path', cached.full);
@@ -28613,16 +28629,19 @@ exports.fetchReleaseByTag = fetchReleaseByTag;
 exports.listReleases = listReleases;
 exports.resolveTagCommitSha = resolveTagCommitSha;
 const constants_1 = __nccwpck_require__(8386);
-async function githubFetch(path) {
-    const token = process.env.GITHUB_TOKEN;
+function githubAuthHeaders() {
     const headers = {
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
     };
+    const token = process.env.GITHUB_TOKEN;
     if (token) {
         headers.Authorization = `Bearer ${token}`;
     }
-    const response = await fetch(`${constants_1.GITHUB_API}${path}`, { headers });
+    return headers;
+}
+async function githubFetch(path) {
+    const response = await fetch(`${constants_1.GITHUB_API}${path}`, { headers: githubAuthHeaders() });
     if (!response.ok) {
         const body = await response.text();
         throw new Error(`GitHub API ${path} failed: HTTP ${response.status} ${response.statusText} — ${body.slice(0, 200)}`);
@@ -28647,10 +28666,7 @@ async function resolveTagCommitSha(tag) {
         throw new Error(`Unable to peel annotated tag ${tag}: missing object URL`);
     }
     const tagObj = await fetch(ref.object.url, {
-        headers: {
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-        },
+        headers: githubAuthHeaders(),
     });
     if (!tagObj.ok) {
         throw new Error(`Failed to peel tag ${tag}: HTTP ${tagObj.status}`);

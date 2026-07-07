@@ -9,17 +9,20 @@ interface GhTagRef {
   object: { type: string; sha: string; url?: string };
 }
 
-export async function githubFetch<T>(path: string): Promise<T> {
-  const token = process.env.GITHUB_TOKEN;
+function githubAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   };
+  const token = process.env.GITHUB_TOKEN;
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+  return headers;
+}
 
-  const response = await fetch(`${GITHUB_API}${path}`, { headers });
+export async function githubFetch<T>(path: string): Promise<T> {
+  const response = await fetch(`${GITHUB_API}${path}`, { headers: githubAuthHeaders() });
   if (!response.ok) {
     const body = await response.text();
     throw new Error(
@@ -56,10 +59,7 @@ export async function resolveTagCommitSha(tag: string): Promise<string> {
     throw new Error(`Unable to peel annotated tag ${tag}: missing object URL`);
   }
   const tagObj = await fetch(ref.object.url, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
+    headers: githubAuthHeaders(),
   });
   if (!tagObj.ok) {
     throw new Error(`Failed to peel tag ${tag}: HTTP ${tagObj.status}`);
