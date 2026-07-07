@@ -29,6 +29,7 @@ async function main(): Promise<void> {
   const command = core.getInput('command');
   const commandArgs = parseCommandArgs(core.getInput('command-args'));
   const observerApiUrl = core.getInput('observer-api-url');
+  const apiToken = core.getInput('api-token');
 
   const release = await resolveRelease(versionSha || version);
   core.info(`Resolved deslicer ${release.semver} (${release.sha.slice(0, 7)}) from tag ${release.tag}`);
@@ -39,6 +40,12 @@ async function main(): Promise<void> {
 
   if (observerApiUrl) {
     core.exportVariable('OBSERVER_API_URL', observerApiUrl);
+  }
+
+  if (apiToken) {
+    // Secret-safe: mask before export, env-only delivery (never argv). REQ-LOG-007.
+    core.setSecret(apiToken);
+    core.exportVariable('DESLICER_API_TOKEN', apiToken);
   }
 
   core.setOutput('cli-version', release.semver);

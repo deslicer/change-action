@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 — 2026-07-07
+
+- Add optional `api-token` input for direct (App-free) mode. The value is masked with `core.setSecret` and exported to the CLI as `$DESLICER_API_TOKEN` — env-only, never argv.
+
 ## 1.0.4 — 2026-06-09
 
 - Fix CLI execution after install: `tc.cacheFile` returns the cache directory, not the file path. The action was adding the wrong dir to `PATH` and trying to exec the arch directory, failing with `Unable to locate executable file: .../x64`. Now joins the file name and re-applies the executable bit.
