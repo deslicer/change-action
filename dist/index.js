@@ -28239,6 +28239,7 @@ const core = __importStar(__nccwpck_require__(7484));
 const exec = __importStar(__nccwpck_require__(5236));
 const cache_1 = __nccwpck_require__(3817);
 const download_1 = __nccwpck_require__(9315);
+const outputs_1 = __nccwpck_require__(4377);
 const resolve_1 = __nccwpck_require__(5075);
 function parseCommandArgs(raw) {
     const trimmed = raw.trim();
@@ -28247,12 +28248,26 @@ function parseCommandArgs(raw) {
     }
     return trimmed.split(/\s+/);
 }
+function forwardCliOutputs(command) {
+    const outputs = (0, outputs_1.readForwardedOutputs)();
+    for (const key of outputs_1.FORWARDED_OUTPUT_KEYS) {
+        const value = outputs[key];
+        if (value !== undefined) {
+            core.setOutput(key, value);
+        }
+    }
+    const summary = (0, outputs_1.renderForwardedSummary)(command, outputs);
+    if (summary) {
+        core.summary.addRaw(summary).write();
+    }
+}
 async function runDeslicerChange(binaryPath, command, args) {
     const argv = ['change', command, ...args];
     core.info(`Running: deslicer ${argv.join(' ')}`);
     const code = await exec.exec(binaryPath, argv, {
         ignoreReturnCode: true,
     });
+    forwardCliOutputs(command);
     if (code !== 0) {
         core.setFailed(`deslicer change ${command} exited with code ${code}`);
     }
@@ -28678,6 +28693,144 @@ async function resolveTagCommitSha(tag) {
 
 /***/ }),
 
+/***/ 4377:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FORWARDED_OUTPUT_KEYS = void 0;
+exports.readForwardedOutputs = readForwardedOutputs;
+exports.renderForwardedSummary = renderForwardedSummary;
+const fs = __importStar(__nccwpck_require__(3024));
+/** Keys the deslicer CLI writes to GITHUB_OUTPUT that we forward as action outputs. */
+exports.FORWARDED_OUTPUT_KEYS = [
+    'plan_id',
+    'plan_row_id',
+    'plan_status',
+    'plan_summary',
+    'progress_status',
+    'total_items',
+    'fully_completed_items',
+    'diff_total',
+    'diff_additions',
+    'diff_modifications',
+    'diff_deletions',
+    'diff_has_destructive',
+    'execution_id',
+    'execution_status',
+    'jobs_total',
+    'jobs_succeeded',
+    'jobs_failed',
+];
+/**
+ * Parse the job step GITHUB_OUTPUT file after the CLI subprocess appends to it.
+ * Returns the last value seen for each known key.
+ */
+function readForwardedOutputs(outputPath = process.env.GITHUB_OUTPUT) {
+    if (!outputPath || !fs.existsSync(outputPath)) {
+        return {};
+    }
+    const content = fs.readFileSync(outputPath, 'utf8');
+    const values = {};
+    for (const line of content.split(/\r?\n/)) {
+        if (!line || line.startsWith('#')) {
+            continue;
+        }
+        const delimiter = line.indexOf('=');
+        if (delimiter <= 0) {
+            continue;
+        }
+        const key = line.slice(0, delimiter);
+        if (!exports.FORWARDED_OUTPUT_KEYS.includes(key)) {
+            continue;
+        }
+        let value = line.slice(delimiter + 1);
+        if (value.endsWith('%0A')) {
+            value = value.slice(0, -3).replace(/%0A/g, '\n');
+        }
+        values[key] = value;
+    }
+    return values;
+}
+function renderForwardedSummary(command, outputs) {
+    if (!outputs.plan_id && !outputs.execution_id) {
+        return undefined;
+    }
+    const lines = [
+        '## Deslicer change-action',
+        '',
+        `**Command:** \`${command}\``,
+        '',
+        '| Field | Value |',
+        '| --- | --- |',
+    ];
+    if (outputs.plan_id) {
+        lines.push(`| Plan ID | \`${outputs.plan_id}\` |`);
+    }
+    if (outputs.plan_status) {
+        lines.push(`| Plan status | **${outputs.plan_status}** |`);
+    }
+    if (outputs.plan_summary) {
+        lines.push(`| Summary | ${outputs.plan_summary} |`);
+    }
+    if (outputs.diff_total) {
+        lines.push(`| Changes | ${outputs.diff_total} (+${outputs.diff_additions ?? '0'} / ~${outputs.diff_modifications ?? '0'} / -${outputs.diff_deletions ?? '0'}) |`);
+    }
+    if (outputs.progress_status) {
+        lines.push(`| Progress | ${outputs.progress_status} |`);
+    }
+    if (outputs.execution_id) {
+        lines.push(`| Execution | \`${outputs.execution_id}\` |`);
+    }
+    if (outputs.execution_status) {
+        lines.push(`| Execution status | **${outputs.execution_status}** |`);
+    }
+    if (outputs.jobs_total) {
+        lines.push(`| Jobs | ${outputs.jobs_succeeded ?? '0'}/${outputs.jobs_total} succeeded |`);
+    }
+    if (lines.length <= 6) {
+        return undefined;
+    }
+    return lines.join('\n');
+}
+
+
+/***/ }),
+
 /***/ 6728:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -28913,6 +29066,14 @@ module.exports = require("node:crypto");
 
 "use strict";
 module.exports = require("node:events");
+
+/***/ }),
+
+/***/ 3024:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs");
 
 /***/ }),
 

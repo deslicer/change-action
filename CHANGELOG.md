@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 — 2026-07-09
+
+- Forward structured CLI outputs from `$GITHUB_OUTPUT` to action outputs (`plan_id`, `plan_status`, diff counts, execution fields, and more).
+- Render a job step summary table when the CLI writes plan or execution identifiers.
+
 ## 1.1.0 — 2026-07-07
 
 - Add optional `api-token` input for direct (App-free) mode. The value is masked with `core.setSecret` and exported to the CLI as `$DESLICER_API_TOKEN` — env-only, never argv.

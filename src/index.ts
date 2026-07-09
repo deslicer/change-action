@@ -2,6 +2,11 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { cacheBinary } from './lib/cache';
 import { downloadAndVerify } from './lib/download';
+import {
+  FORWARDED_OUTPUT_KEYS,
+  readForwardedOutputs,
+  renderForwardedSummary,
+} from './lib/outputs';
 import { resolveRelease } from './lib/resolve';
 
 function parseCommandArgs(raw: string): string[] {
@@ -12,12 +17,27 @@ function parseCommandArgs(raw: string): string[] {
   return trimmed.split(/\s+/);
 }
 
+function forwardCliOutputs(command: string): void {
+  const outputs = readForwardedOutputs();
+  for (const key of FORWARDED_OUTPUT_KEYS) {
+    const value = outputs[key];
+    if (value !== undefined) {
+      core.setOutput(key, value);
+    }
+  }
+  const summary = renderForwardedSummary(command, outputs);
+  if (summary) {
+    core.summary.addRaw(summary).write();
+  }
+}
+
 async function runDeslicerChange(binaryPath: string, command: string, args: string[]): Promise<void> {
   const argv = ['change', command, ...args];
   core.info(`Running: deslicer ${argv.join(' ')}`);
   const code = await exec.exec(binaryPath, argv, {
     ignoreReturnCode: true,
   });
+  forwardCliOutputs(command);
   if (code !== 0) {
     core.setFailed(`deslicer change ${command} exited with code ${code}`);
   }

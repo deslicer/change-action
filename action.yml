@@ -42,6 +42,40 @@ outputs:
     description: Semver of the deslicer binary that was installed.
   cli-path:
     description: Absolute path to the installed deslicer binary.
+  plan_id:
+    description: External plan id from the deslicer change command (when command is set).
+  plan_row_id:
+    description: Internal plan row id from the deslicer change command.
+  plan_status:
+    description: Plan lifecycle status (draft, pending_approval, approved, etc.).
+  plan_summary:
+    description: Human-readable plan summary including change counts when available.
+  diff_total:
+    description: Total change items from the dry-run diff.
+  diff_additions:
+    description: Number of additions in the dry-run diff.
+  diff_modifications:
+    description: Number of modifications in the dry-run diff.
+  diff_deletions:
+    description: Number of deletions in the dry-run diff.
+  diff_has_destructive:
+    description: Whether the dry-run diff includes deletions.
+  progress_status:
+    description: Item-completion progress status from change status.
+  total_items:
+    description: Total change items from change status.
+  fully_completed_items:
+    description: Items fully completed on every target host.
+  execution_id:
+    description: Execution id from change deploy.
+  execution_status:
+    description: Execution status from change deploy.
+  jobs_total:
+    description: Total jobs in the execution.
+  jobs_succeeded:
+    description: Jobs that completed successfully.
+  jobs_failed:
+    description: Jobs that failed.
 
 runs:
   using: node24
