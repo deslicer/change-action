@@ -44,7 +44,7 @@ logs, and never appears in process arguments.
 | Input | Meaning |
 |---|---|
 | `version: v1` | Floating tag — latest `v1.x.y` release from `deslicer/cli` |
-| `version: v1.0.0` | Immutable semver release |
+| `version: v1.3.0` | Immutable semver release |
 | `version-sha: <40-char-sha>` | Pin to the release tag that points at this commit (overrides `version`) |
 
 Enterprise teams should pin `version-sha` or an immutable semver tag.
