@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Install-smoke and live E2E now pin `deslicer/cli` **v1.3.0** (was v1.0.0 on smoke). Floating `version: v1` is still the action default and is covered by one Ubuntu smoke job.
+- Install-smoke and live E2E now pin `deslicer/cli` **v1.3.1**. Floating `version: v1` is still the action default and is covered by one Ubuntu smoke job.
 
 ## 1.2.0 — 2026-07-09
 
