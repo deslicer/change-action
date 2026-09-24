@@ -28396,11 +28396,12 @@ function tempExtractDir() {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.COSIGN_VERSION = exports.COSIGN_OIDC_ISSUER = exports.RELEASE_WORKFLOW_PATH = exports.GITHUB_API = exports.CLI_REPO_NAME = exports.CLI_REPO_OWNER = void 0;
+exports.COSIGN_VERSION = exports.COSIGN_OIDC_ISSUER = exports.RELEASE_WORKFLOW_MAIN_IDENTITY = exports.RELEASE_WORKFLOW_IDENTITY_PREFIX = exports.GITHUB_API = exports.CLI_REPO_NAME = exports.CLI_REPO_OWNER = void 0;
 exports.CLI_REPO_OWNER = 'deslicer';
 exports.CLI_REPO_NAME = 'cli';
 exports.GITHUB_API = 'https://api.github.com';
-exports.RELEASE_WORKFLOW_PATH = 'https://github.com/deslicer/cli/.github/workflows/release.yml@refs/tags/';
+exports.RELEASE_WORKFLOW_IDENTITY_PREFIX = 'https://github.com/deslicer/cli/.github/workflows/release.yml@refs/tags/';
+exports.RELEASE_WORKFLOW_MAIN_IDENTITY = 'https://github.com/deslicer/cli/.github/workflows/release.yml@refs/heads/main';
 exports.COSIGN_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
 exports.COSIGN_VERSION = '2.4.1';
 
@@ -28570,18 +28571,24 @@ async function verifySha256File(archivePath, shaPath) {
 }
 async function verifyCosignSignature(archivePath, sigPath, certPath, tag) {
     const cosign = await (0, cosign_1.ensureCosign)();
-    const identity = `${constants_1.RELEASE_WORKFLOW_PATH}${tag}`;
-    const code = await exec.exec(cosign, [
-        'verify-blob',
-        `--certificate-identity=${identity}`,
-        `--certificate-oidc-issuer=${constants_1.COSIGN_OIDC_ISSUER}`,
-        `--signature=${sigPath}`,
-        `--certificate=${certPath}`,
-        archivePath,
-    ], { ignoreReturnCode: true });
-    if (code !== 0) {
-        throw new Error('cosign signature verification failed for deslicer CLI archive');
+    const identities = [
+        constants_1.RELEASE_WORKFLOW_MAIN_IDENTITY,
+        `${constants_1.RELEASE_WORKFLOW_IDENTITY_PREFIX}${tag}`,
+    ];
+    for (const identity of identities) {
+        const code = await exec.exec(cosign, [
+            'verify-blob',
+            `--certificate-identity=${identity}`,
+            `--certificate-oidc-issuer=${constants_1.COSIGN_OIDC_ISSUER}`,
+            `--signature=${sigPath}`,
+            `--certificate=${certPath}`,
+            archivePath,
+        ], { ignoreReturnCode: true });
+        if (code === 0) {
+            return;
+        }
     }
+    throw new Error('cosign signature verification failed for deslicer CLI archive');
 }
 async function extractArchive(archivePath, destDir, platform) {
     await fs.mkdir(destDir, { recursive: true });

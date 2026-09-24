@@ -6,7 +6,8 @@ import {
   CLI_REPO_NAME,
   CLI_REPO_OWNER,
   COSIGN_OIDC_ISSUER,
-  RELEASE_WORKFLOW_PATH,
+  RELEASE_WORKFLOW_IDENTITY_PREFIX,
+  RELEASE_WORKFLOW_MAIN_IDENTITY,
 } from './constants';
 import { ensureCosign } from './cosign';
 import { artifactName, binaryFileName, rustTarget } from './platform';
@@ -50,22 +51,28 @@ export async function verifyCosignSignature(
   tag: string,
 ): Promise<void> {
   const cosign = await ensureCosign();
-  const identity = `${RELEASE_WORKFLOW_PATH}${tag}`;
-  const code = await exec.exec(
-    cosign,
-    [
-      'verify-blob',
-      `--certificate-identity=${identity}`,
-      `--certificate-oidc-issuer=${COSIGN_OIDC_ISSUER}`,
-      `--signature=${sigPath}`,
-      `--certificate=${certPath}`,
-      archivePath,
-    ],
-    { ignoreReturnCode: true },
-  );
-  if (code !== 0) {
-    throw new Error('cosign signature verification failed for deslicer CLI archive');
+  const identities = [
+    RELEASE_WORKFLOW_MAIN_IDENTITY,
+    `${RELEASE_WORKFLOW_IDENTITY_PREFIX}${tag}`,
+  ];
+  for (const identity of identities) {
+    const code = await exec.exec(
+      cosign,
+      [
+        'verify-blob',
+        `--certificate-identity=${identity}`,
+        `--certificate-oidc-issuer=${COSIGN_OIDC_ISSUER}`,
+        `--signature=${sigPath}`,
+        `--certificate=${certPath}`,
+        archivePath,
+      ],
+      { ignoreReturnCode: true },
+    );
+    if (code === 0) {
+      return;
+    }
   }
+  throw new Error('cosign signature verification failed for deslicer CLI archive');
 }
 
 async function extractArchive(archivePath: string, destDir: string, platform: NodeJS.Platform): Promise<void> {
