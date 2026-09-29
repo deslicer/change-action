@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 — 2026-09-29
 
 - Accept releases signed by the CLI release workflow running from `main`, while retaining support for tag-triggered signatures.
 - Install-smoke and live E2E now pin `deslicer/cli` **v1.7.0**. Floating `version: v1` remains the action default and is covered by one Ubuntu smoke job.
