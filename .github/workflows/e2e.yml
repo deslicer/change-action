@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
+    inputs:
+      cli_version:
+        description: Published CLI tag to test (defaults to v1.9.0)
+        type: string
+        default: v1.9.0
 
 permissions:
   contents: read
@@ -21,11 +26,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            cli_version: v1.7.3
+            cli_version: ${{ inputs.cli_version || 'v1.9.0' }}
           - os: macos-latest
-            cli_version: v1.7.3
+            cli_version: ${{ inputs.cli_version || 'v1.9.0' }}
           - os: windows-latest
-            cli_version: v1.7.3
+            cli_version: ${{ inputs.cli_version || 'v1.9.0' }}
           # Floating tag must resolve to the current latest v1.x CLI release.
           - os: ubuntu-latest
             cli_version: v1
@@ -59,6 +64,7 @@ jobs:
         run: npm ci && npm run build
 
       - name: Install deslicer via action
+        id: install
         uses: ./
         with:
           version: ${{ matrix.cli_version }}
@@ -66,11 +72,19 @@ jobs:
 
       - name: Assert deslicer version
         shell: bash
+        env:
+          REQUESTED_VERSION: ${{ matrix.cli_version }}
+          RESOLVED_VERSION: ${{ steps.install.outputs.cli-version }}
         run: |
           version_out="$(deslicer --version)"
           echo "$version_out"
-          echo "$version_out" | grep -F '1.7.3' \
-            || { echo "::error::expected deslicer 1.7.3, got: $version_out"; exit 1; }
+          read -r name installed _ <<< "$version_out"
+          [[ "$name" == deslicer && "$installed" == "${RESOLVED_VERSION#v}" ]]
+          if [[ "$REQUESTED_VERSION" == v1 ]]; then
+            [[ "$installed" =~ ^1\.[0-9]+\.[0-9]+$ ]]
+          else
+            [[ "$installed" == "${REQUESTED_VERSION#v}" ]]
+          fi
 
   # Live round-trip against the staging Observer using the api-token
   # direct (App-free) mode: bundle a fixture app, upload it, create a
@@ -133,7 +147,7 @@ jobs:
         if: steps.creds-gate.outputs.has_creds == 'true'
         uses: ./
         with:
-          version: v1.7.3
+          version: ${{ inputs.cli_version || 'v1.9.0' }}
           command: plan
           command-args: --source-dir ./e2e-fixture --target-group ${{ vars.STAGING_TARGET_GROUP_ID }} --name change-action-live-e2e --no-wait
           observer-api-url: ${{ vars.STAGING_OBSERVER_API_URL }}
