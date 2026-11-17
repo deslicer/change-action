@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       cli_version:
-        description: Published CLI tag to test (defaults to v1.9.0)
+        description: Published CLI tag to test (defaults to v1.9.1)
         type: string
-        default: v1.9.0
+        default: v1.9.1
 
 permissions:
   contents: read
@@ -26,11 +26,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            cli_version: ${{ inputs.cli_version || 'v1.9.0' }}
+            cli_version: ${{ inputs.cli_version || 'v1.9.1' }}
           - os: macos-latest
-            cli_version: ${{ inputs.cli_version || 'v1.9.0' }}
+            cli_version: ${{ inputs.cli_version || 'v1.9.1' }}
           - os: windows-latest
-            cli_version: ${{ inputs.cli_version || 'v1.9.0' }}
+            cli_version: ${{ inputs.cli_version || 'v1.9.1' }}
           # Floating tag must resolve to the current latest v1.x CLI release.
           - os: ubuntu-latest
             cli_version: v1
@@ -147,7 +147,7 @@ jobs:
         if: steps.creds-gate.outputs.has_creds == 'true'
         uses: ./
         with:
-          version: ${{ inputs.cli_version || 'v1.9.0' }}
+          version: ${{ inputs.cli_version || 'v1.9.1' }}
           command: plan
           command-args: --source-dir ./e2e-fixture --target-group ${{ vars.STAGING_TARGET_GROUP_ID }} --name change-action-live-e2e --no-wait
           observer-api-url: ${{ vars.STAGING_OBSERVER_API_URL }}
